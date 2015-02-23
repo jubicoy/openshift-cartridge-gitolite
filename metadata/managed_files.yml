@@ -1,0 +1,18 @@
+---
+locked_files:
+- env/
+- env/*
+- conf/
+- conf/performance.conf.erb.hidden
+- bin/
+- bin/*
+- usr/bin/
+- usr/bin/*
+- usr/lib/
+- usr/lib/*
+- metadata/
+- metadata/*
+processed_templates:
+- 'conf/*.erb'
+- 'configuration/**/*.erb'
+- 'env/*.erb'

@@ -1,0 +1,43 @@
+---
+Name: gitolite
+Cartridge-Short-Name: GITOLITE
+Display-Name: Gitolite Cartridge 0.1
+Description: Smart HTTP Gitolite cartridge.
+Version: '0.1'
+Versions:
+- '0.1'
+Source-Url: https://github.com/jubicoy/openshift-cartridge-gitolite.git
+License: Apache License 2.0
+Vendor: Jubic Oy
+Cartridge-Version: 0.0.1
+Cartridge-Vendor: jubicoy
+Categories:
+- service
+Provides:
+- git
+- gitolite
+Cart-Data:
+- Key: OPENSHIFT_GITOLITE_HOME
+  Type: environment
+  Description: "Gitolites home directory for conf and repo data."
+Publishes:
+Subscribes:
+  set-env:
+    Type: ENV:*
+    Required: false
+Endpoints:
+- Private-IP-Name:      IP
+  Private-Port-Name:    PORT
+  Private-Port:         8080
+  Public-Port-Name:     PROXY_PORT
+  Protocols:
+  - http
+  Options:
+    primary: true
+  Mappings:
+  - Frontend:           "/git"
+    Backend:            "/git"
+Scaling:
+  Min: 1
+  Max: 1
+Install-Build-Required: false

@@ -1,0 +1,97 @@
+#!/bin/bash -e
+
+source $OPENSHIFT_CARTRIDGE_SDK_BASH
+
+HTTPD_CFG_FILE=${OPENSHIFT_GITOLITE_DIR}configuration/etc/conf/httpd_nolog.conf
+HTTPD_CFG_DIR=${OPENSHIFT_GITOLITE_DIR}configuration/etc/conf.d/
+ERB_HTTPD_CFG_DIR=${OPENSHIFT_GITOLITE_DIR}usr/etc/conf.d/
+HTTPD_PASSENV_FILE=${HTTPD_CFG_DIR}passenv.conf
+HTTPD_PID_FILE=${OPENSHIFT_GITOLITE_DIR}run/httpd.pid
+
+HTTPD_CMD_CONF="-C 'Include ${HTTPD_CFG_DIR}*.conf' -f $HTTPD_CFG_FILE"
+for dir in /etc/openshift/cart.conf.d/httpd; do
+    [ -d $dir ] && HTTPD_CMD_CONF="$HTTPD_CMD_CONF -c 'Include $dir/*.conf'"
+done
+
+function pre_start_httpd_config {
+    write_server_status ${HTTPD_CFG_DIR}server-status.conf
+    write_httpd_passenv $HTTPD_PASSENV_FILE
+    oo-erb ${ERB_HTTPD_CFG_DIR}openshift.conf.erb > ${HTTPD_CFG_DIR}openshift.conf
+    oo-erb ${OPENSHIFT_GITOLITE_DIR}conf/performance.conf.erb.hidden > ${HTTPD_CFG_DIR}performance.conf
+
+    ensure_valid_httpd_process "$HTTPD_PID_FILE" "$HTTPD_CFG_FILE"
+}
+
+function start {
+    echo "Starting Gitolite cartridge"
+    pre_start_httpd_config
+
+    set -m
+    eval "nohup /usr/sbin/httpd $HTTPD_CMD_CONF -D FOREGROUND |& /usr/bin/logshifter -tag gitolite &"
+    set +m
+    [ "$?" == "0" ] && wait_for_pid_file $HTTPD_PID_FILE
+}
+
+function stop {
+    echo "Stopping Gitolite cartridge"
+    ensure_valid_httpd_pid_file "$HTTPD_PID_FILE" "$HTTPD_CFG_FILE"
+    if [ -f "$HTTPD_PID_FILE" ]; then
+        shutdown_httpd_graceful $HTTPD_PID_FILE
+    fi
+}
+
+function restart {
+    echo "Restarting Gitolite cartridge"
+    ensure_httpd_restart_succeed "$HTTPD_PID_FILE" "$HTTPD_CFG_FILE"
+    if [ -f "$HTTPD_PID_FILE" ]; then
+        pre_start_httpd_config
+        httpd_pid=`cat "$HTTPD_PID_FILE" 2> /dev/null`
+        kill -HUP $httpd_pid
+    else
+        start
+    fi
+
+    return $?
+}
+
+function status {
+    if output=$(curl http://$OPENSHIFT_GITOLITE_IP:$OPENSHIFT_GITOLITE_PORT/server-status?auto 2>&1 ); then
+        client_result "Application is running"
+        client_result $output
+    else
+        client_result "Application is either stopped or inaccessible"
+    fi
+}
+
+function configtest() {
+    echo "Testing Apache *.conf files"
+    eval "/usr/sbin/httpd $HTTPD_CMD_CONF -t"
+    return $?
+}
+
+function catchall {
+    echo "Missing implementation"
+}
+
+case "$1" in
+    start)                start ;;
+    stop)                 stop ;;
+    restart)              restart ;;
+    status)               status ;;
+    reload)               catchall ;;
+    tidy)                 catchall ;;
+    pre-build)            catchall ;;
+    build)                catchall ;;
+    deploy)               catchall ;;
+    configtest)           configtest ;;
+    post-deploy)          catchall ;;
+    pre-snapshot)         catchall ;;
+    post-snapshot)        catchall ;;
+    pre-restore)          catchall ;;
+    post-restore)         catchall ;;
+    pre-repo-archive)     catchall ;;
+    update-configuration) catchall ;;
+    *)           exit 0
+esac
+
+exit $?

@@ -1,0 +1,85 @@
+#!/bin/bash -e
+
+source ${OPENSHIFT_GITOLITE_DIR}usr/lib/gitolite_config
+source $OPENSHIFT_CARTRIDGE_SDK_BASH
+
+if [[ -d /usr/lib64 ]]; then
+    _libdir=/usr/lib64/
+else
+    _libdir=/usr/lib/
+fi
+
+case "$1" in
+  -v|--version)
+    version="$2"
+esac
+
+env_dir="${OPENSHIFT_GITOLITE_DIR}env/"
+tmp_dir="${OPENSHIFT_GITOLITE_DIR}tmp/"
+
+username=$(generate_username)
+password=$(generate_password)
+
+# Create and link required directories and files
+mkdir -p ${OPENSHIFT_GITOLITE_DIR}{run,tmp}
+rm -f ${OPENSHIFT_GITOLITE_DIR}modules ${OPENSHIFT_GITOLITE_DIR}conf/magic
+ln -s ${_libdir}httpd/modules ${OPENSHIFT_GITOLITE_DIR}modules
+mkdir -p ${OPENSHIFT_GITOLITE_DIR}conf
+ln -s /etc/httpd/conf/magic ${OPENSHIFT_GITOLITE_DIR}conf/magic
+
+# Setup home directory into static storage
+mkdir ${OPENSHIFT_DATA_DIR}gitolite-home
+export GITOLITE_HTTP_HOME=${OPENSHIFT_DATA_DIR}gitolite-home/
+set_env_var 'GITOLITE_HTTP_HOME' "${OPENSHIFT_DATA_DIR}gitolite-home/" $env_dir
+
+export PATH=${OPENSHIFT_GITOLITE_DIR}usr/bin/:$PATH
+bin_dir="${OPENSHIFT_GITOLITE_DIR}usr/bin/"
+
+# Install gitolite
+git clone https://github.com/sitaramc/gitolite.git "$tmp_dir"/gitolite
+cd "$tmp_dir"/gitolite; git reset --hard "$GITOLITE_TARGET_COMMIT"
+if [ ! -d "$bin_dir" ]; then
+    mkdir "$bin_dir"
+fi
+HOME=$GITOLITE_HTTP_HOME ${tmp_dir}gitolite/install -to "$bin_dir"
+rm -rf {$tmp_dir}*
+
+#####    Setup Smart HTTP    #####
+# Run gitolite setup
+cd $GITOLITE_HTTP_HOME; HOME=$GITOLITE_HTTP_HOME gitolite setup -a "$username"
+htpasswd -bc ${GITOLITE_HTTP_HOME}.htpasswd "$username" "$password"
+
+# Setup httpd
+mkdir -p ${OPENSHIFT_GITOLITE_DIR}configuration/etc/conf
+cp -Hr ${OPENSHIFT_GITOLITE_DIR}usr/etc/conf/* ${OPENSHIFT_GITOLITE_DIR}configuration/etc/conf/
+mkdir -p ${OPENSHIFT_GITOLITE_DIR}configuration/etc/conf.d
+
+# Create/truncate gear-editable Apache configuration files
+echo > ${OPENSHIFT_GITOLITE_DIR}configuration/etc/conf.d/openshift.conf
+echo > ${OPENSHIFT_GITOLITE_DIR}configuration/etc/conf.d/passenv.conf
+echo > ${OPENSHIFT_GITOLITE_DIR}configuration/etc/conf.d/performance.conf
+echo > ${OPENSHIFT_GITOLITE_DIR}configuration/etc/conf.d/server-status.conf
+
+mkdir -p ${OPENSHIFT_GITOLITE_DIR}conf
+cp ${OPENSHIFT_GITOLITE_DIR}usr/etc/conf.d/performance.conf.erb ${OPENSHIFT_GITOLITE_DIR}conf/performance.conf.erb
+cp ${OPENSHIFT_GITOLITE_DIR}conf/performance.conf.erb ${OPENSHIFT_GITOLITE_DIR}conf/performance.conf.erb.hidden
+
+# Print results
+client_result ""
+client_result "Gitolite installed. Please make note of these credentials:"
+client_result ""
+client_result "           Admin User: $username"
+client_result "       Admin Password: $password"
+client_result "    Config Repository: gitolite-admin"
+client_result ""
+
+client_result "Access repository with git:"
+client_result "    git clone https://$OPENSHIFT_APP_DNS/git/gitolite-admin.git"
+client_result ""
+client_result "Users are added via ssh and htpasswd for now."
+
+cart_props 'connection_url=https://$OPENSHIFT_APP_DNS/git/gitolite-admin.git'
+cart_props "username=$username"
+cart_props "password=$password"
+
+exit 0

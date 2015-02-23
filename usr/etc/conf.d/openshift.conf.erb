@@ -1,0 +1,22 @@
+ServerRoot "<%= ENV['OPENSHIFT_GITOLITE_DIR'] %>"
+Listen <%= "#{ENV['OPENSHIFT_GITOLITE_IP']}:#{ENV['OPENSHIFT_GITOLITE_PORT']}" %>
+User  <%= ENV['OPENSHIFT_GEAR_UUID'] %>
+Group <%= ENV['OPENSHIFT_GEAR_UUID'] %>
+ErrorLog "|tee"
+CustomLog "|tee" combined
+<IfVersion >= 2.4>
+    DefaultRuntimeDir "<%= "#{ENV['OPENSHIFT_GITOLITE_DIR']}run"%>"
+</IfVersion>
+
+SetEnv GIT_PROJECT_ROOT <%= ENV['GITOLITE_HTTP_HOME']  %>repositories
+ScriptAlias /git/ <%= ENV['OPENSHIFT_GITOLITE_DIR'] %>usr/bin/gitolite-shell/
+ScriptAlias /gitmob/ <%= ENV['$GITOLITE_HTTP_HOME'] %>bin/gitolite-shell/
+SetEnv GITOLITE_HTTP_HOME <%= ENV['$GITOLITE_HTTP_HOME'] %>
+SetEnv GIT_HTTP_EXPORT_ALL
+
+<Location /git>
+    AuthType Basic
+    AuthName "Private Git Access"
+    Require valid-user
+    AuthUserFile <%= ENV['GITOLITE_HTTP_HOME'] %>.htpasswd
+</Location>
