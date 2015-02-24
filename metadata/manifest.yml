@@ -1,15 +1,17 @@
 ---
 Name: gitolite
 Cartridge-Short-Name: GITOLITE
-Display-Name: Gitolite Cartridge 0.1
+Display-Name: Gitolite v3.6.2
 Description: Smart HTTP Gitolite cartridge.
-Version: '0.1'
+Version: '3.6.2'
 Versions:
-- '0.1'
+- '3.6.2'
 Source-Url: https://github.com/jubicoy/openshift-cartridge-gitolite.git
 License: Apache License 2.0
 Vendor: Jubic Oy
-Cartridge-Version: 0.0.1
+Cartridge-Version: '0.0.2'
+Compatible-Versions:
+- '0.0.1'
 Cartridge-Vendor: jubicoy
 Categories:
 - service
@@ -17,9 +19,15 @@ Provides:
 - git
 - gitolite
 Cart-Data:
-- Key: OPENSHIFT_GITOLITE_HOME
-  Type: environment
-  Description: "Gitolites home directory for conf and repo data."
+- Key: "username"
+  Type: cart_data
+  Description: Admin user for Gitolite
+- Key: "password"
+  Type: cart_data
+  Description: Password for admin user
+- Key: "repo_url"
+  Type: cart_data
+  Description: gitolite-admin repository url
 Publishes:
 Subscribes:
   set-env:

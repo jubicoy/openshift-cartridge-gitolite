@@ -5,4 +5,34 @@ case "$1" in
     version="$2"
 esac
 
+source ${OPENSHIFT_GITOLITE_DIR}usr/$version/lib/gitolite_config
+source $OPENSHIFT_CARTRIDGE_SDK_BASH
+
+tmp_dir="${OPENSHIFT_GITOLITE_DIR}gl_tmp/"
+bin_dir="${OPENSHIFT_GITOLITE_DIR}usr/bin/"
+
+# Install gitolite
+git clone https://github.com/sitaramc/gitolite.git "$tmp_dir"/gitolite
+cd "$tmp_dir"/gitolite; git reset --hard "$GITOLITE_TARGET_COMMIT"
+if [ ! -d "$bin_dir" ]; then
+    mkdir "$bin_dir"
+fi
+HOME=$GITOLITE_HTTP_HOME ${tmp_dir}gitolite/install -to "$bin_dir"
+rm -rf {$tmp_dir}
+
+# Setup httpd
+mkdir -p ${OPENSHIFT_GITOLITE_DIR}configuration/etc/conf
+cp -Hr ${OPENSHIFT_GITOLITE_DIR}usr/etc/conf/* ${OPENSHIFT_GITOLITE_DIR}configuration/etc/conf/
+mkdir -p ${OPENSHIFT_GITOLITE_DIR}configuration/etc/conf.d
+
+# Create/truncate gear-editable Apache configuration files
+echo > ${OPENSHIFT_GITOLITE_DIR}configuration/etc/conf.d/openshift.conf
+echo > ${OPENSHIFT_GITOLITE_DIR}configuration/etc/conf.d/passenv.conf
+echo > ${OPENSHIFT_GITOLITE_DIR}configuration/etc/conf.d/performance.conf
+echo > ${OPENSHIFT_GITOLITE_DIR}configuration/etc/conf.d/server-status.conf
+
+mkdir -p ${OPENSHIFT_GITOLITE_DIR}conf
+cp ${OPENSHIFT_GITOLITE_DIR}usr/etc/conf.d/performance.conf.erb ${OPENSHIFT_GITOLITE_DIR}conf/performance.conf.erb
+cp ${OPENSHIFT_GITOLITE_DIR}conf/performance.conf.erb ${OPENSHIFT_GITOLITE_DIR}conf/performance.conf.erb.hidden
+
 exit 0

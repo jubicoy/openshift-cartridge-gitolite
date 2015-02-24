@@ -17,9 +17,9 @@ the cartridge are most likely LDAP and CAS.
 
 ## Installation
 
-This cartridge an embedded cartridge and requires a primary web
+This cartridge is an embedded cartridge and requires a primary web
 cartridge to function and the intended usage would be to drop this cartridge
-into an application with repository browser, such as Gitweb or Redmine.
+into an application with a repository browser, such as Gitweb or Redmine.
 
 Create an application with desired primary cartridge and add this
 cartridge as an embedded cartridge by linking the
@@ -28,4 +28,7 @@ to the *Install your own cartridge* field.
 
 ## Configure
 
-To add users and repositories clone the gitolite-admin repository using the provided admin credentials. SSH into the application and use htpasswd to add users to the .htpasswd file.
+To manage ACLs and repositories clone the gitolite-admin repository using the
+provided admin credentials. Adding users requires connecting to the
+application with SSH and manually modifying `$OPENSHIFT_DATA_DIR/gitolite-home/.htpasswd`
+with `htpasswd`.
