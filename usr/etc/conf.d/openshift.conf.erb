@@ -10,7 +10,7 @@ CustomLog "|tee" combined
 
 SetEnv GIT_PROJECT_ROOT <%= ENV['GITOLITE_HTTP_HOME']  %>repositories
 ScriptAlias /git/ <%= ENV['OPENSHIFT_GITOLITE_DIR'] %>usr/bin/gitolite-shell/
-ScriptAlias /gitmob/ <%= ENV['$GITOLITE_HTTP_HOME'] %>bin/gitolite-shell/
+ScriptAlias /gitmob/ <%= ENV['$OPENSHIFT_GITOLITE_DIR'] %>usr/bin/gitolite-shell/
 SetEnv GITOLITE_HTTP_HOME <%= ENV['$GITOLITE_HTTP_HOME'] %>
 SetEnv GIT_HTTP_EXPORT_ALL
 

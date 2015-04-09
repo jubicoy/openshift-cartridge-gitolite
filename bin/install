@@ -15,43 +15,49 @@ source $OPENSHIFT_CARTRIDGE_SDK_BASH
 
 env_dir="${OPENSHIFT_GITOLITE_DIR}env/"
 
-username=$(generate_username)
-password=$(generate_password)
-
 # Create and link required directories and files
 mkdir -p ${OPENSHIFT_GITOLITE_DIR}{run,tmp}
-rm -f ${OPENSHIFT_GITOLITE_DIR}modules ${OPENSHIFT_GITOLITE_DIR}conf/magic
+rm -rf ${OPENSHIFT_GITOLITE_DIR}modules ${OPENSHIFT_GITOLITE_DIR}conf/magic
 ln -s ${_libdir}httpd/modules ${OPENSHIFT_GITOLITE_DIR}modules
 mkdir -p ${OPENSHIFT_GITOLITE_DIR}conf
 ln -s /etc/httpd/conf/magic ${OPENSHIFT_GITOLITE_DIR}conf/magic
 
-# Setup home directory into static storage
-mkdir ${OPENSHIFT_DATA_DIR}gitolite-home
-export GITOLITE_HTTP_HOME=${OPENSHIFT_DATA_DIR}gitolite-home/
-set_env_var 'GITOLITE_HTTP_HOME' "${OPENSHIFT_DATA_DIR}gitolite-home/" $env_dir
+if [[ -d ${OPENSHIFT_DATA_DIR}gitolite-home ]]; then
+  client_result ""
+  client_result "Existing installation found."
+  export GITOLITE_HTTP_HOME=${OPENSHIFT_DATA_DIR}gitolite-home/
+  set_env_var 'GITOLITE_HTTP_HOME' "${OPENSHIFT_DATA_DIR}gitolite-home/" $env_dir
+else
+  # Setup home directory into static storage
+  mkdir ${OPENSHIFT_DATA_DIR}gitolite-home
 
-export PATH=${OPENSHIFT_GITOLITE_DIR}usr/bin/:$PATH
+  export PATH=${OPENSHIFT_GITOLITE_DIR}usr/bin/:$PATH
 
-# Run gitolite setup
-cd $GITOLITE_HTTP_HOME; HOME=$GITOLITE_HTTP_HOME gitolite setup -a "$username"
-htpasswd -bc ${GITOLITE_HTTP_HOME}.htpasswd "$username" "$password"
+  # Run gitolite setup
+  username=$(generate_username)
+  password=$(generate_password)
+  cd $GITOLITE_HTTP_HOME; HOME=$GITOLITE_HTTP_HOME gitolite setup -a "$username"
+  htpasswd -bc ${GITOLITE_HTTP_HOME}.htpasswd "$username" "$password"
 
-# Print results
-client_result ""
-client_result "Gitolite installed. Please make note of these credentials:"
-client_result ""
-client_result "           Admin User: $username"
-client_result "       Admin Password: $password"
-client_result "    Config Repository: gitolite-admin"
-client_result ""
+  # Print results
+  client_result ""
+  client_result "Gitolite installed. Please make note of these credentials:"
+  client_result ""
+  client_result "           Admin User: $username"
+  client_result "       Admin Password: $password"
+  client_result "    Config Repository: gitolite-admin"
+  client_result ""
 
-client_result "Access repository with git:"
-client_result "    git clone https://$OPENSHIFT_APP_DNS/git/gitolite-admin.git"
-client_result ""
-client_result "Users are added via ssh and htpasswd for now."
+  client_result "Access repository with git:"
+  client_result "    git clone https://$OPENSHIFT_APP_DNS/git/gitolite-admin.git"
+  client_result ""
+  client_result "Users are added via ssh and htpasswd for now."
 
-cart_props "repo_url=https://$OPENSHIFT_APP_DNS/git/gitolite-admin.git"
-cart_props "username=${username}"
-cart_props "password=${password}"
+  cart_props "repo_url=https://$OPENSHIFT_APP_DNS/git/gitolite-admin.git"
+  cart_props "username=${username}"
+  cart_props "password=${password}"
+fi
+
+sed -i "/\%RC = (/a \ \ \ \ HTTP_ANON_USER               =>  'anonymous'," ${GITOLITE_HTTP_HOME}.gitolite.rc
 
 exit 0

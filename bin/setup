@@ -18,7 +18,7 @@ if [ ! -d "$bin_dir" ]; then
     mkdir "$bin_dir"
 fi
 HOME=$GITOLITE_HTTP_HOME ${tmp_dir}gitolite/install -to "$bin_dir"
-rm -rf {$tmp_dir}
+rm -rf ${tmp_dir}
 
 # Setup httpd
 mkdir -p ${OPENSHIFT_GITOLITE_DIR}configuration/etc/conf

@@ -45,6 +45,8 @@ Endpoints:
   Mappings:
   - Frontend:           "/git"
     Backend:            "/git"
+  - Frontend:           "/gitmob"
+    Backend:            "/gitmob"
 Scaling:
   Min: 1
   Max: 1
